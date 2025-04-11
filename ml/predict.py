@@ -1,29 +1,35 @@
 import sys
+import re
 import joblib
-import pandas as pd
+import numpy as np
 
-def predict_fraud(upi_id, reported_count, geo_location, device_type, ip_risk_score):
-    model = joblib.load("fraud_detector_optimized.pkl")
+# Load saved model, scaler, and encoder
+model = joblib.load('fraud_detector_optimized.pkl')
+scaler = joblib.load('scaler.pkl')
+encoder = joblib.load('domain_encoder.pkl')
 
-    input_df = pd.DataFrame([{
-        "upi_id": upi_id,
-        "reported_count": int(reported_count),
-        "geo_location": geo_location,
-        "device_type": device_type,
-        "ip_risk_score": float(ip_risk_score)
-    }])
+# Get CLI args
+upi = sys.argv[1]
+amt = float(sys.argv[2])
+freq = int(sys.argv[3])
 
-    prediction = model.predict(input_df)[0]
-    score = model.predict_proba(input_df)[0][1] * 100
+# Extract features
+domain = upi.split('@')[1] if '@' in upi else ''
+name_length = len(upi.split('@')[0])
+has_numbers = int(bool(re.search(r'\d', upi)))
+has_suspicious_keywords = int(any(keyword in upi.lower() for keyword in ['fraud', 'scam', 'free', 'cash']))
+is_uppercase = int(upi.split('@')[0].isupper())
+contains_special_chars = int(bool(re.search(r'[^a-zA-Z0-9@.]', upi)))
 
-    verdict = "SCAM" if prediction == 1 else "SAFE"
-    print("\n🚨 Scam Prediction:", verdict)
-    print("🧠 Risk Score: {:.0f} / 100".format(score))
+# Encode + scale
+domain_encoded = encoder.transform([domain])[0]
+features = np.array([[domain_encoded, name_length, has_numbers, has_suspicious_keywords, is_uppercase, contains_special_chars]])
+features_scaled = scaler.transform(features)
 
-if __name__ == "__main__":
-    if len(sys.argv) != 6:
-        print("Usage: python predict_fraud.py <upi_id> <reported_count> <geo_location> <device_type> <ip_risk_score>")
-        sys.exit(1)
+# Predict
+prediction = model.predict(features_scaled)[0]
+probability = int(model.predict_proba(features_scaled)[0][1] * 100)
 
-    _, upi_id, reported_count, geo_location, device_type, ip_risk_score = sys.argv
-    predict_fraud(upi_id, reported_count, geo_location, device_type, ip_risk_score)
+# Output
+print("🔍 Scam Prediction:", "SCAM" if prediction == 1 else "SAFE")
+print("📊 Risk Score:", probability, "/ 100")
