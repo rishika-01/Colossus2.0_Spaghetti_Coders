@@ -8,8 +8,12 @@ export default function Home() {
   const router = useRouter()
 
   const handleSubmit = () => {
-    if (upiLink) router.push(`/result?upi=${encodeURIComponent(upiLink)}`)
-  }
+    if (upiLink.trim()) {
+      let fullLink = upiLink.includes('upi://pay?') ? upiLink : `upi://pay?pa=${upiLink.trim()}`;
+      router.push(`/result?upi=${encodeURIComponent(fullLink)}`);
+    }
+  };
+  
 
   return (
     <main className="p-8 max-w-xl mx-auto">
