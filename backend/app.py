@@ -39,17 +39,14 @@ def check_upi(data: UPIRequest):
             "message": "UPI not found in database. Proceed with caution.",
         }
 
-@app.post("/report")
-async def report(data: dict):
-    upi = data.get("upi")
-    if not upi:
-        return {"message": "UPI ID missing."}
+@app.post("/report_upi/")
+def report_upi(data: UPIRequest):
+    upi_id = data.upi_id.strip().lower()
 
-    ref = db.reference("/")
-    ref.child(upi).set({
-        "upi_id": upi,
+    ref = db.reference("flagged")
+    ref.child(upi_id).set({
+        "upi_id": upi_id,
         "is_scam": True
     })
-    return {"message": f"{upi} has been reported and flagged as scam."}
 
-
+    return {"status": f"{upi_id} has been reported and flagged as a scam."}

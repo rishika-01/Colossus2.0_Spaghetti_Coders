@@ -9,21 +9,19 @@ export default function ResultPage() {
   const [result, setResult] = useState(null);
   const [reportMsg, setReportMsg] = useState('');
 
-  // Extract UPI ID (pa=...) from full UPI link
   useEffect(() => {
     if (!upiParam) return;
 
     try {
       const url = new URL(upiParam);
       const pa = url.searchParams.get('pa');
-      setUpiID(pa || upiParam); // fallback to upiParam if it's a plain ID
+      setUpiID(pa || upiParam);
     } catch (err) {
       console.error("❌ Invalid UPI link format:", err);
-      setUpiID(upiParam); // fallback to raw input
+      setUpiID(upiParam);
     }
   }, [upiParam]);
 
-  // Fetch from backend when upiID is ready
   useEffect(() => {
     if (!upiID) return;
 
@@ -79,7 +77,8 @@ export default function ResultPage() {
       {result ? (
         <>
           <p><strong>UPI ID:</strong> {result.upi_id}</p>
-          <p className={`mt-2 text-xl font-semibold ${getColor(result.risk_score)}`}>
+
+          <p className={`mt-4 text-xl font-semibold ${getColor(result.risk_score)}`}>
             🧠 Risk Score: {result.risk_score} – {getRiskLabel(result.risk_score)}
           </p>
 
